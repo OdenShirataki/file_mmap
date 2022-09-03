@@ -3,6 +3,16 @@ name = "file_mmap"
 version = "0.1.0"
 edition = "2021"
 
+authors = ["Oden Shirataki <oden.srtk@gmail.com>"]
+
+description = "Customized version of AVLTree library"
+
+repository = "https://github.com/OdenShirataki/file_mmap"
+
+keywords = ["mmap","memmap","file","database"]
+license = "MIT"
+
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
