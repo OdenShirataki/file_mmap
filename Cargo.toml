@@ -5,7 +5,7 @@ edition = "2021"
 
 authors = ["Oden Shirataki <oden.srtk@gmail.com>"]
 
-description = "Customized version of AVLTree library"
+description = "memmap file interface library"
 
 repository = "https://github.com/OdenShirataki/file_mmap"
 
