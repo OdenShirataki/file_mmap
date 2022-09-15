@@ -9,6 +9,7 @@ pub struct FileMmap{
     ,mmap:MmapMut
     ,len:u64
 }
+
 impl FileMmap{
     pub fn new(path:&str,initial_size:u64) -> Result<FileMmap,std::io::Error>{
         let mut len = match metadata(&path){
