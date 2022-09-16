@@ -79,27 +79,23 @@ impl FileMmap{
     }
     pub fn append(&mut self,bytes:&[u8])->Option<u64>{
         let addr=self.len;
-        if let Ok(_)=self.set_len(self.len+bytes.len() as u64){
-            unsafe{
-                std::ptr::copy(
-                    bytes.as_ptr()
-                    ,self.mmap.as_ptr().offset(addr as isize) as *mut u8
-                    ,bytes.len()
-                );
-            }
+        if let Ok(_)=self.set_len(self.len+bytes.len() as u64 + 1){
+            self.write(addr,bytes);
             Some(addr)
         }else{
             None
         }
     }
     pub fn write(&mut self,addr:u64,bytes:&[u8]){
+        let len=bytes.len();
         unsafe{
             std::ptr::copy(
                 bytes.as_ptr()
                 ,self.mmap.as_ptr().offset(addr as isize) as *mut u8
-                ,bytes.len()
+                ,len
             );
         }
+        self.write_0(addr as isize+len as isize,1);
     }
     pub fn write_0(&mut self,addr:isize,len:u64){
         unsafe{
