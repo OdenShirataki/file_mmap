@@ -55,15 +55,17 @@ impl FileMmap{
     pub fn len(&self)->u64{
         self.len
     }
-    pub fn as_ptr(&self)->*mut i64{
-        self.mmap.as_ptr() as *mut i64
-    }
-    pub fn as_mut_ptr(&mut self)->*mut i64{
-        self.mmap.as_mut_ptr() as *mut i64
+    pub fn as_ptr(&self)->*const i64{
+        self.mmap.as_ptr() as *const i64
     }
     pub fn offset(&self,addr:isize)->*const i8{
         unsafe{
             self.mmap.as_ptr().offset(addr) as *const i8
+        }
+    }
+    pub fn slice(&self,addr:isize,len:usize)->&[u8]{
+        unsafe{
+            std::slice::from_raw_parts(self.mmap.as_ptr().offset(addr),len)
         }
     }
     pub fn set_len(&mut self,len:u64)->std::io::Result<()>{
