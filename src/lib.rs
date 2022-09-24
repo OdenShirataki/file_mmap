@@ -81,7 +81,7 @@ impl FileMmap{
     }
     pub fn append(&mut self,bytes:&[u8])->Option<u64>{
         let addr=self.len;
-        if let Ok(_)=self.set_len(self.len+bytes.len() as u64 + 1){
+        if let Ok(_)=self.set_len(self.len+bytes.len() as u64){
             self.write(addr,bytes);
             Some(addr)
         }else{
