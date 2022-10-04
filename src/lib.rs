@@ -16,41 +16,31 @@ impl FileMmap{
             Ok(md)=>md.len()
             ,Err(_)=>0
         };
-        match OpenOptions::new()
-           .read(true)
-           .write(true)
-           .create(true)
-           .open(&path)
-        {
-            Ok(mut file)=>{
-                if len==0{
-                    if let Err(e)=file.set_len(if initial_size==0{
-                        1
-                    }else{
-                        initial_size
-                    }){   //サイズが0の場合失敗するようなので0の場合はとりあえず1バイト指定しておく
-                        return Err(e);
-                    }
-                    if let Err(e)=file.seek(std::io::SeekFrom::Start(initial_size)){
-                        return Err(e);
-                    }
-                    len=initial_size;
-                }else{
-                    file.seek(std::io::SeekFrom::Start(len))?;
-                }
-                let mmap = unsafe {
-                    MmapOptions::new().map_mut(&file).unwrap()
-                };
-                Ok(FileMmap{
-                    file
-                    ,mmap
-                    ,len
-                })
-            }
-            ,Err(e)=>{
-                Err(e)
-            }
+        let mut file=OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .open(&path)?
+        ;
+        if len==0{
+            file.set_len(if initial_size==0{
+                1   //サイズが0の場合失敗するようなので0の場合はとりあえず1バイト指定しておく
+            }else{
+                initial_size
+            })?;
+            file.seek(std::io::SeekFrom::Start(initial_size))?;
+            len=initial_size;
+        }else{
+            file.seek(std::io::SeekFrom::Start(len))?;
         }
+        let mmap = unsafe {
+            MmapOptions::new().map_mut(&file)?
+        };
+        Ok(FileMmap{
+            file
+            ,mmap
+            ,len
+        })
     }
     pub fn len(&self)->u64{
         self.len
@@ -70,14 +60,7 @@ impl FileMmap{
     }
     pub fn set_len(&mut self,len:u64)->std::io::Result<()>{
         self.len=len;
-        match self.file.set_len(len){
-            Err(e)=>{
-                Err(e)
-            }
-            ,Ok(())=>{
-                Ok(())
-            }
-        }
+        self.file.set_len(len)
     }
     pub fn append(&mut self,bytes:&[u8])->Option<u64>{
         let addr=self.len;
