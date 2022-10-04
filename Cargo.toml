@@ -10,6 +10,7 @@ description = "memmap file interface library"
 repository = "https://github.com/OdenShirataki/file_mmap"
 
 keywords = ["mmap","memmap","file","database"]
+categories = ["filesystem"]
 license = "MIT/Apache-2.0"
 
 [dependencies]
