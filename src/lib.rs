@@ -53,7 +53,7 @@ impl FileMmap{
             self.mmap.as_ptr().offset(addr) as *const i8
         }
     }
-    pub fn slice(&self,addr:isize,len:usize)->&[u8]{
+    pub fn bytes(&self,addr:isize,len:usize)->&[u8]{
         unsafe{
             std::slice::from_raw_parts(self.mmap.as_ptr().offset(addr),len)
         }
