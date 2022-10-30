@@ -1,8 +1,9 @@
-use memmap2::*;
 use std::{
     fs::{OpenOptions,File}
-    ,io::Seek
+    ,io::{Seek,SeekFrom}
 };
+
+use memmap2::MmapMut;
 
 pub struct FileMmap{
     file:File
@@ -11,30 +12,25 @@ pub struct FileMmap{
 }
 
 impl FileMmap{
-    pub fn new(path:&str,initial_size:u64)->Result<FileMmap,std::io::Error>{
+    pub fn new(path:&str,inital_size:u64)->Result<Self,std::io::Error>{
         let mut file=OpenOptions::new()
             .read(true)
             .write(true)
             .create(true)
             .open(&path)?
         ;
-        let mut len=match file.metadata(){
-            Ok(md)=>md.len()
-            ,Err(_)=>0
-        };
+        let mut len=file.metadata()?.len();
         if len==0{
-            file.set_len(if initial_size==0{
+            file.set_len(if inital_size==0{
                 1   //If the size is 0, it seems to fail, so if it is 0, specify 1 byte for the time being
             }else{
-                initial_size
+                inital_size
             })?;
-            file.seek(std::io::SeekFrom::Start(initial_size))?;
-            len=initial_size;
-        }else{
-            file.seek(std::io::SeekFrom::Start(len))?;
+            len=inital_size;
         }
-        let mmap = unsafe {
-            MmapOptions::new().map_mut(&file)?
+        file.seek(SeekFrom::Start(len))?;
+        let mmap=unsafe{
+            MmapMut::map_mut(&file)?
         };
         Ok(FileMmap{
             file
@@ -62,14 +58,11 @@ impl FileMmap{
         self.len=len;
         self.file.set_len(len)
     }
-    pub fn append(&mut self,bytes:&[u8])->Option<u64>{
+    pub fn append(&mut self,bytes:&[u8])->Result<u64,std::io::Error>{
         let addr=self.len;
-        if let Ok(_)=self.set_len(self.len+bytes.len() as u64){
-            self.write(addr,bytes);
-            Some(addr)
-        }else{
-            None
-        }
+        self.set_len(self.len+bytes.len() as u64)?;
+        self.write(addr,bytes);
+        Ok(addr)
     }
     pub fn write(&mut self,addr:u64,bytes:&[u8]){
         let len=bytes.len();
