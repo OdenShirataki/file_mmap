@@ -1,7 +1,7 @@
 use memmap2::*;
 use std::{
-    fs::{OpenOptions,File,metadata}
-    ,io::{prelude::*}
+    fs::{OpenOptions,File}
+    ,io::Seek
 };
 
 pub struct FileMmap{
@@ -11,20 +11,20 @@ pub struct FileMmap{
 }
 
 impl FileMmap{
-    pub fn new(path:&str,initial_size:u64) -> Result<FileMmap,std::io::Error>{
-        let mut len = match metadata(&path){
-            Ok(md)=>md.len()
-            ,Err(_)=>0
-        };
+    pub fn new(path:&str,initial_size:u64)->Result<FileMmap,std::io::Error>{
         let mut file=OpenOptions::new()
             .read(true)
             .write(true)
             .create(true)
             .open(&path)?
         ;
+        let mut len=match file.metadata(){
+            Ok(md)=>md.len()
+            ,Err(_)=>0
+        };
         if len==0{
             file.set_len(if initial_size==0{
-                1   //サイズが0の場合失敗するようなので0の場合はとりあえず1バイト指定しておく
+                1   //If the size is 0, it seems to fail, so if it is 0, specify 1 byte for the time being
             }else{
                 initial_size
             })?;
