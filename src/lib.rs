@@ -73,7 +73,6 @@ impl FileMmap{
                 ,len
             );
         }
-        self.write_0(addr as isize+len as isize,1);
     }
     pub fn write_0(&mut self,addr:isize,len:u64){
         unsafe{

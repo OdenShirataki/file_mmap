@@ -4,5 +4,5 @@ use file_mmap::FileMmap;
 fn test(){
     let path="D:\\test.data";
     let mut filemmap=FileMmap::new(path,0).unwrap();
-    filemmap.append(b"test");
+    filemmap.append(b"test").unwrap();
 }
