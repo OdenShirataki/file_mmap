@@ -3,11 +3,11 @@ use std::{
     ,io::{Seek,SeekFrom}
 };
 
-use memmap2::MmapMut;
+use memmap2::MmapRaw;
 
 pub struct FileMmap{
     file:File
-    ,mmap:MmapMut
+    ,mmap:MmapRaw
     ,len:u64
 }
 
@@ -29,9 +29,7 @@ impl FileMmap{
             len=inital_size;
         }
         file.seek(SeekFrom::Start(len))?;
-        let mmap=unsafe{
-            MmapMut::map_mut(&file)?
-        };
+        let mmap=MmapRaw::map_raw(&file)?;
         Ok(FileMmap{
             file
             ,mmap
