@@ -42,15 +42,11 @@ impl FileMmap{
     pub fn as_ptr(&self)->*const i64{
         self.mmap.as_ptr() as *const i64
     }
-    pub fn offset(&self,addr:isize)->*const i8{
-        unsafe{
-            self.mmap.as_ptr().offset(addr) as *const i8
-        }
+    pub unsafe fn offset(&self,addr:isize)->*const i8{
+        self.mmap.as_ptr().offset(addr) as *const i8
     }
-    pub fn bytes(&self,addr:isize,len:usize)->&[u8]{
-        unsafe{
-            std::slice::from_raw_parts(self.mmap.as_ptr().offset(addr),len)
-        }
+    pub unsafe fn bytes(&self,addr:isize,len:usize)->&[u8]{
+        std::slice::from_raw_parts(self.mmap.as_ptr().offset(addr),len)
     }
     pub fn set_len(&mut self,len:u64)->std::io::Result<()>{
         self.len=len;
@@ -59,26 +55,22 @@ impl FileMmap{
     pub fn append(&mut self,bytes:&[u8])->Result<u64,std::io::Error>{
         let addr=self.len;
         self.set_len(self.len+bytes.len() as u64)?;
-        self.write(addr,bytes);
+        unsafe{self.write(addr,bytes);}
         Ok(addr)
     }
-    pub fn write(&mut self,addr:u64,bytes:&[u8]){
+    pub unsafe fn write(&mut self,addr:u64,bytes:&[u8]){
         let len=bytes.len();
-        unsafe{
-            std::ptr::copy(
-                bytes.as_ptr()
-                ,self.mmap.as_ptr().offset(addr as isize) as *mut u8
-                ,len
-            );
-        }
+        std::ptr::copy(
+            bytes.as_ptr()
+            ,self.mmap.as_ptr().offset(addr as isize) as *mut u8
+            ,len
+        );
     }
-    pub fn write_0(&mut self,addr:isize,len:u64){
-        unsafe{
-            std::ptr::write_bytes(
-                self.mmap.as_ptr().offset(addr) as *mut u8
-                ,0
-                ,len as usize
-            );
-        }
+    pub unsafe fn write_0(&mut self,addr:isize,len:u64){
+        std::ptr::write_bytes(
+            self.mmap.as_ptr().offset(addr) as *mut u8
+            ,0
+            ,len as usize
+        );
     }
 }
