@@ -35,20 +35,16 @@ impl FileMmap {
         }
         file.seek(SeekFrom::Start(len))?;
         let mmap = ManuallyDrop::new(Box::new(MmapRaw::map_raw(&file)?));
-        Ok(FileMmap {
-            file,
-            mmap,
-            len,
-        })
+        Ok(FileMmap { file, mmap, len })
     }
     pub fn len(&self) -> u64 {
         self.len
     }
-    pub fn as_ptr(&self) -> *const i64 {
-        self.mmap.as_ptr() as *const i64
+    pub fn as_ptr(&self) -> *const u8 {
+        self.mmap.as_ptr()
     }
-    pub unsafe fn offset(&self, addr: isize) -> *const i8 {
-        self.mmap.as_ptr().offset(addr) as *const i8
+    pub unsafe fn offset(&self, addr: isize) -> *const u8 {
+        self.mmap.as_ptr().offset(addr)
     }
     pub unsafe fn bytes(&self, addr: isize, len: usize) -> &[u8] {
         std::slice::from_raw_parts(self.mmap.as_ptr().offset(addr), len)
@@ -57,10 +53,10 @@ impl FileMmap {
         let current_len = self.file.metadata()?.len();
         if len > current_len {
             self.file.set_len(len)?;
-        }else{
+        } else {
             unsafe { ManuallyDrop::drop(&mut self.mmap) };
             self.file.set_len(len)?;
-            self.mmap=ManuallyDrop::new(Box::new(MmapRaw::map_raw(&self.file).unwrap()));
+            self.mmap = ManuallyDrop::new(Box::new(MmapRaw::map_raw(&self.file).unwrap()));
         }
         self.len = len;
         Ok(())
