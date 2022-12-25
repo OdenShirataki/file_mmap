@@ -1,14 +1,27 @@
+use memmap2::MmapRaw;
 use std::{
     fs::{File, OpenOptions},
     io::{Seek, SeekFrom},
+    mem::ManuallyDrop,
 };
 
-use memmap2::MmapRaw;
-
 pub struct FileMmap {
-    file: File,
-    mmap: MmapRaw,
+    file: ManuallyDrop<Box<File>>,
+    mmap: ManuallyDrop<Box<MmapRaw>>,
     len: u64,
+}
+
+impl Drop for FileMmap {
+    fn drop(&mut self) {
+        unsafe { ManuallyDrop::drop(&mut self.mmap) };
+        if let Ok(md) = self.file.metadata() {
+            let len = md.len();
+            if len != self.len {
+                let _ = self.file.set_len(self.len);
+            }
+        }
+        unsafe { ManuallyDrop::drop(&mut self.file) };
+    }
 }
 
 impl FileMmap {
@@ -28,8 +41,12 @@ impl FileMmap {
             len = inital_size;
         }
         file.seek(SeekFrom::Start(len))?;
-        let mmap = MmapRaw::map_raw(&file)?;
-        Ok(FileMmap { file, mmap, len })
+        let mmap = ManuallyDrop::new(Box::new(MmapRaw::map_raw(&file)?));
+        Ok(FileMmap {
+            file: ManuallyDrop::new(Box::new(file)),
+            mmap,
+            len,
+        })
     }
     pub fn len(&self) -> u64 {
         self.len
@@ -44,8 +61,11 @@ impl FileMmap {
         std::slice::from_raw_parts(self.mmap.as_ptr().offset(addr), len)
     }
     pub fn set_len(&mut self, len: u64) -> std::io::Result<()> {
+        if len > self.len {
+            self.file.set_len(len)?;
+        }
         self.len = len;
-        self.file.set_len(len)
+        Ok(())
     }
     pub fn append(&mut self, bytes: &[u8]) -> Result<u64, std::io::Error> {
         let addr = self.len;
