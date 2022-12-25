@@ -6,7 +6,7 @@ use std::{
 };
 
 pub struct FileMmap {
-    file: ManuallyDrop<Box<File>>,
+    file: File,
     mmap: ManuallyDrop<Box<MmapRaw>>,
     len: u64,
 }
@@ -14,13 +14,6 @@ pub struct FileMmap {
 impl Drop for FileMmap {
     fn drop(&mut self) {
         unsafe { ManuallyDrop::drop(&mut self.mmap) };
-        if let Ok(md) = self.file.metadata() {
-            let len = md.len();
-            if len != self.len {
-                let _ = self.file.set_len(self.len);
-            }
-        }
-        unsafe { ManuallyDrop::drop(&mut self.file) };
     }
 }
 
@@ -43,7 +36,7 @@ impl FileMmap {
         file.seek(SeekFrom::Start(len))?;
         let mmap = ManuallyDrop::new(Box::new(MmapRaw::map_raw(&file)?));
         Ok(FileMmap {
-            file: ManuallyDrop::new(Box::new(file)),
+            file,
             mmap,
             len,
         })
@@ -61,8 +54,13 @@ impl FileMmap {
         std::slice::from_raw_parts(self.mmap.as_ptr().offset(addr), len)
     }
     pub fn set_len(&mut self, len: u64) -> std::io::Result<()> {
-        if len > self.len {
+        let current_len = self.file.metadata()?.len();
+        if len > current_len {
             self.file.set_len(len)?;
+        }else{
+            unsafe { ManuallyDrop::drop(&mut self.mmap) };
+            self.file.set_len(len)?;
+            self.mmap=ManuallyDrop::new(Box::new(MmapRaw::map_raw(&self.file).unwrap()));
         }
         self.len = len;
         Ok(())
