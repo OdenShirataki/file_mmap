@@ -47,7 +47,7 @@ impl FileMmap {
         } else {
             unsafe { ManuallyDrop::drop(&mut self.mmap) };
             self.file.set_len(len)?;
-            self.mmap = ManuallyDrop::new(Box::new(MmapRaw::map_raw(&self.file).unwrap()));
+            self.mmap = ManuallyDrop::new(Box::new(MmapRaw::map_raw(&self.file)?));
         }
         Ok(())
     }
