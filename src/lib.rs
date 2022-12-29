@@ -3,6 +3,7 @@ use std::{
     fs,
     io::{self, Seek},
     mem::ManuallyDrop,
+    path::Path,
     ptr,
 };
 
@@ -18,12 +19,12 @@ impl Drop for FileMmap {
 }
 
 impl FileMmap {
-    pub fn new(path: &str) -> io::Result<Self> {
+    pub fn new<P: AsRef<Path>>(path: P) -> io::Result<Self> {
         let mut file = fs::OpenOptions::new()
             .read(true)
             .write(true)
             .create(true)
-            .open(&path)?;
+            .open(path)?;
         file.seek(io::SeekFrom::End(0))?;
         let mmap = ManuallyDrop::new(Box::new(MmapRaw::map_raw(&file)?));
         Ok(FileMmap { file, mmap })
