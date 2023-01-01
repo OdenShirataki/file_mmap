@@ -61,7 +61,7 @@ impl FileMmap {
     pub fn write(&mut self, addr: isize, bytes: &[u8]) -> io::Result<usize> {
         self.file.seek_write(bytes, addr as u64)
     }
-    pub unsafe fn write_0(&mut self, addr: isize, len: usize) -> io::Result<usize> {
+    pub fn write_0(&mut self, addr: isize, len: usize) -> io::Result<usize> {
         self.write(addr, &vec![0; len])
     }
 }

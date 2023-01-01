@@ -1,6 +1,6 @@
 [package]
 name = "file_mmap"
-version = "0.13.0"
+version = "0.13.1"
 edition = "2021"
 
 authors = ["Oden Shirataki <oden.srtk@gmail.com>"]
@@ -14,4 +14,4 @@ categories = ["filesystem"]
 license = "MIT/Apache-2.0"
 
 [dependencies]
-memmap2="0.5"
+memmap2 = "0.5"
