@@ -3,8 +3,8 @@ use std::{
     fs,
     io::{self, Seek},
     mem::ManuallyDrop,
+    os::windows::prelude::FileExt,
     path::Path,
-    ptr,
 };
 
 pub struct FileMmap {
@@ -55,20 +55,13 @@ impl FileMmap {
     pub fn append(&mut self, bytes: &[u8]) -> io::Result<u64> {
         let addr = self.file.metadata()?.len();
         self.set_len(addr + bytes.len() as u64)?;
-        unsafe {
-            self.write(addr as isize, bytes);
-        }
+        self.write(addr as isize, bytes)?;
         Ok(addr)
     }
-    pub unsafe fn write(&mut self, addr: isize, bytes: &[u8]) {
-        let len = bytes.len();
-        ptr::copy(
-            bytes.as_ptr(),
-            self.mmap.as_ptr().offset(addr) as *mut u8,
-            len,
-        );
+    pub fn write(&mut self, addr: isize, bytes: &[u8]) -> io::Result<usize> {
+        self.file.seek_write(bytes, addr as u64)
     }
-    pub unsafe fn write_0(&mut self, addr: isize, len: usize) {
-        ptr::write_bytes(self.mmap.as_ptr().offset(addr) as *mut u8, 0, len);
+    pub unsafe fn write_0(&mut self, addr: isize, len: usize) -> io::Result<usize> {
+        self.write(addr, &vec![0; len])
     }
 }
