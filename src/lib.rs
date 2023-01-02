@@ -53,10 +53,10 @@ impl FileMmap {
         Ok(())
     }
     pub fn append(&mut self, bytes: &[u8]) -> io::Result<u64> {
+        unsafe { ManuallyDrop::drop(&mut self.mmap) };
         let addr = self.file.metadata()?.len();
         self.file.set_len(addr + bytes.len() as u64)?;
         self.file.seek_write(bytes, addr)?;
-        unsafe { ManuallyDrop::drop(&mut self.mmap) };
         self.mmap = ManuallyDrop::new(Box::new(MmapRaw::map_raw(&self.file)?));
         Ok(addr)
     }
