@@ -1,9 +1,9 @@
+use file_offset::FileExt;
 use memmap2::MmapRaw;
 use std::{
     fs,
     io::{self, Seek},
     mem::ManuallyDrop,
-    os::windows::prelude::FileExt,
     path::Path,
 };
 
@@ -56,12 +56,12 @@ impl FileMmap {
         unsafe { ManuallyDrop::drop(&mut self.mmap) };
         let addr = self.file.metadata()?.len();
         self.file.set_len(addr + bytes.len() as u64)?;
-        self.file.seek_write(bytes, addr)?;
+        self.file.write_offset(bytes, addr)?;
         self.mmap = ManuallyDrop::new(Box::new(MmapRaw::map_raw(&self.file)?));
         Ok(addr)
     }
     pub fn write(&mut self, addr: isize, bytes: &[u8]) -> io::Result<usize> {
-        self.file.seek_write(bytes, addr as u64)
+        self.file.write_offset(bytes, addr as u64)
     }
     pub fn write_0(&mut self, addr: isize, len: usize) -> io::Result<usize> {
         self.write(addr, &vec![0; len])
