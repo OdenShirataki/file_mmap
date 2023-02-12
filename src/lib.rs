@@ -44,13 +44,13 @@ impl FileMmap {
     pub fn set_len(&mut self, len: u64) -> io::Result<()> {
         let current_len = self.file.metadata()?.len();
         if len > current_len && current_len > 0 {
-            self.file.set_len(len)?;
+            self.file.set_len(len)
         } else {
             unsafe { ManuallyDrop::drop(&mut self.mmap) };
             self.file.set_len(len)?;
             self.mmap = ManuallyDrop::new(Box::new(MmapRaw::map_raw(&self.file)?));
+            Ok(())
         }
-        Ok(())
     }
     pub fn append(&mut self, bytes: &[u8]) -> io::Result<u64> {
         unsafe { ManuallyDrop::drop(&mut self.mmap) };
