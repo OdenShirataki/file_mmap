@@ -10,6 +10,7 @@ use std::{
 pub struct FileMmap {
     file: fs::File,
     mmap: ManuallyDrop<Box<MmapRaw>>,
+    page_size: usize,
 }
 
 impl Drop for FileMmap {
@@ -27,7 +28,11 @@ impl FileMmap {
             .open(path)?;
         file.seek(io::SeekFrom::End(0))?;
         let mmap = ManuallyDrop::new(Box::new(MmapRaw::map_raw(&file)?));
-        Ok(FileMmap { file, mmap })
+        Ok(FileMmap {
+            file,
+            mmap,
+            page_size: sysconf::page::pagesize(),
+        })
     }
     pub fn len(&self) -> io::Result<u64> {
         Ok(self.file.metadata()?.len())
@@ -43,13 +48,16 @@ impl FileMmap {
     }
     pub fn set_len(&mut self, len: u64) -> io::Result<()> {
         let current_len = self.file.metadata()?.len();
-        if len > current_len && current_len > 0 {
-            self.file.set_len(len)
-        } else {
+        if current_len > len
+            || current_len == 0
+            || (current_len as usize / self.page_size != len as usize / self.page_size)
+        {
             unsafe { ManuallyDrop::drop(&mut self.mmap) };
             self.file.set_len(len)?;
             self.mmap = ManuallyDrop::new(Box::new(MmapRaw::map_raw(&self.file)?));
             Ok(())
+        } else {
+            self.file.set_len(len)
         }
     }
     pub fn append(&mut self, bytes: &[u8]) -> io::Result<u64> {
