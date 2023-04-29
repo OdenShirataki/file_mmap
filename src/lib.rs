@@ -43,7 +43,7 @@ impl FileMmap {
     pub unsafe fn offset(&self, addr: isize) -> *const u8 {
         self.mmap.as_ptr().offset(addr)
     }
-    pub unsafe fn bytes(&self, addr: isize, len: usize) -> &[u8] {
+    pub unsafe fn bytes(&self, addr: isize, len: usize) -> &'static [u8] {
         std::slice::from_raw_parts(self.mmap.as_ptr().offset(addr), len)
     }
     pub fn set_len(&mut self, len: u64) -> io::Result<()> {
