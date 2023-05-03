@@ -1,16 +1,19 @@
+use std::{
+    fs, io,
+    mem::ManuallyDrop,
+    path::{Path, PathBuf},
+};
+
 use file_offset::FileExt;
 use memmap2::MmapRaw;
-use std::{
-    fs,
-    io::{self, Seek},
-    mem::ManuallyDrop,
-    path::Path,
-};
+use once_cell::sync::Lazy;
+
+static PAGE_SIZE: Lazy<usize> = Lazy::new(|| sysconf::page::pagesize());
 
 pub struct FileMmap {
     file: fs::File,
     mmap: ManuallyDrop<Box<MmapRaw>>,
-    page_size: usize,
+    path: PathBuf,
 }
 
 impl Drop for FileMmap {
@@ -21,17 +24,16 @@ impl Drop for FileMmap {
 
 impl FileMmap {
     pub fn new<P: AsRef<Path>>(path: P) -> io::Result<Self> {
-        let mut file = fs::OpenOptions::new()
+        let file = fs::OpenOptions::new()
             .read(true)
             .write(true)
             .create(true)
-            .open(path)?;
-        file.seek(io::SeekFrom::End(0))?;
+            .open(&path)?;
         let mmap = ManuallyDrop::new(Box::new(MmapRaw::map_raw(&file)?));
         Ok(FileMmap {
             file,
             mmap,
-            page_size: sysconf::page::pagesize(),
+            path: path.as_ref().to_owned(),
         })
     }
     pub fn len(&self) -> io::Result<u64> {
@@ -50,10 +52,17 @@ impl FileMmap {
         let current_len = self.file.metadata()?.len();
         if current_len > len
             || current_len == 0
-            || (current_len as usize / self.page_size != len as usize / self.page_size)
+            || (current_len as usize / *PAGE_SIZE != len as usize / *PAGE_SIZE)
         {
             unsafe { ManuallyDrop::drop(&mut self.mmap) };
             self.file.set_len(len)?;
+
+            self.file = fs::OpenOptions::new()
+                .read(true)
+                .write(true)
+                .create(true)
+                .open(&self.path)?;
+
             self.mmap = ManuallyDrop::new(Box::new(MmapRaw::map_raw(&self.file)?));
             Ok(())
         } else {
