@@ -1,8 +1,4 @@
-use std::{
-    fs, io,
-    mem::ManuallyDrop,
-    path::{Path, PathBuf},
-};
+use std::{fs, io, mem::ManuallyDrop, path::Path};
 
 use file_offset::FileExt;
 use memmap2::MmapRaw;
@@ -13,7 +9,6 @@ static PAGE_SIZE: Lazy<usize> = Lazy::new(|| sysconf::page::pagesize());
 pub struct FileMmap {
     file: fs::File,
     mmap: ManuallyDrop<Box<MmapRaw>>,
-    path: PathBuf,
 }
 
 impl Drop for FileMmap {
@@ -30,11 +25,7 @@ impl FileMmap {
             .create(true)
             .open(&path)?;
         let mmap = ManuallyDrop::new(Box::new(MmapRaw::map_raw(&file)?));
-        Ok(FileMmap {
-            file,
-            mmap,
-            path: path.as_ref().to_owned(),
-        })
+        Ok(FileMmap { file, mmap })
     }
     pub fn len(&self) -> io::Result<u64> {
         Ok(self.file.metadata()?.len())
@@ -56,13 +47,6 @@ impl FileMmap {
         {
             unsafe { ManuallyDrop::drop(&mut self.mmap) };
             self.file.set_len(len)?;
-
-            self.file = fs::OpenOptions::new()
-                .read(true)
-                .write(true)
-                .create(true)
-                .open(&self.path)?;
-
             self.mmap = ManuallyDrop::new(Box::new(MmapRaw::map_raw(&self.file)?));
             Ok(())
         } else {
