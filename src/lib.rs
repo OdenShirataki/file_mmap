@@ -37,7 +37,7 @@ impl FileMmap {
         self.mmap.as_ptr().offset(addr)
     }
     pub unsafe fn bytes(&self, addr: isize, len: usize) -> &'static [u8] {
-        std::slice::from_raw_parts(self.mmap.as_ptr().offset(addr), len)
+        std::slice::from_raw_parts(self.offset(addr), len)
     }
     pub fn set_len(&mut self, len: u64) -> io::Result<()> {
         let current_len = self.file.metadata()?.len();
