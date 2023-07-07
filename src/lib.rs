@@ -43,7 +43,7 @@ impl FileMmap {
         let current_len = self.file.metadata()?.len();
         if current_len > len
             || current_len == 0
-            || (current_len as usize / *PAGE_SIZE != len as usize / *PAGE_SIZE)
+            || ((current_len as usize - 1) / *PAGE_SIZE != len as usize / *PAGE_SIZE)
         {
             unsafe { ManuallyDrop::drop(&mut self.mmap) };
             self.file.set_len(len)?;
