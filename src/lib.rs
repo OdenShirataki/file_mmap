@@ -27,8 +27,8 @@ impl FileMmap {
         let mmap = ManuallyDrop::new(Box::new(MmapRaw::map_raw(&file)?));
         Ok(FileMmap { file, mmap })
     }
-    pub fn len(&self) -> io::Result<u64> {
-        Ok(self.file.metadata()?.len())
+    pub fn len(&self) -> u64 {
+        self.file.metadata().unwrap().len()
     }
     pub fn as_ptr(&self) -> *const u8 {
         self.mmap.as_ptr()
