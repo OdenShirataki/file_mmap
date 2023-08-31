@@ -1,4 +1,4 @@
-use std::{fs, io, mem::ManuallyDrop, path::Path};
+use std::{fs, io, mem::ManuallyDrop, ops::Deref, path::Path};
 
 use file_offset::FileExt;
 use memmap2::MmapRaw;
@@ -17,6 +17,14 @@ impl Drop for FileMmap {
     }
 }
 
+impl Deref for FileMmap {
+    type Target = MmapRaw;
+
+    fn deref(&self) -> &Self::Target {
+        &self.mmap
+    }
+}
+
 impl FileMmap {
     pub fn new<P: AsRef<Path>>(path: P) -> io::Result<Self> {
         let file = fs::OpenOptions::new()
@@ -30,14 +38,8 @@ impl FileMmap {
     pub fn len(&self) -> u64 {
         self.file.metadata().unwrap().len()
     }
-    pub fn as_ptr(&self) -> *const u8 {
-        self.mmap.as_ptr()
-    }
-    pub unsafe fn offset(&self, addr: isize) -> *const u8 {
-        self.mmap.as_ptr().offset(addr)
-    }
     pub unsafe fn bytes(&self, addr: isize, len: usize) -> &'static [u8] {
-        std::slice::from_raw_parts(self.offset(addr), len)
+        std::slice::from_raw_parts(self.as_ptr().offset(addr), len)
     }
     pub fn set_len(&mut self, len: u64) -> io::Result<()> {
         let current_len = self.file.metadata()?.len();
@@ -61,8 +63,5 @@ impl FileMmap {
     }
     pub fn write(&mut self, addr: isize, bytes: &[u8]) -> io::Result<usize> {
         self.file.write_offset(bytes, addr as u64)
-    }
-    pub fn write_0(&mut self, addr: isize, len: usize) -> io::Result<usize> {
-        self.write(addr, &vec![0; len])
     }
 }
