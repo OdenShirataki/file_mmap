@@ -1,6 +1,11 @@
-use std::{fs, io, mem::ManuallyDrop, ops::Deref, path::Path};
+use std::{
+    fs,
+    io::{self, Write},
+    mem::ManuallyDrop,
+    ops::{Deref, DerefMut},
+    path::Path,
+};
 
-use file_offset::FileExt;
 use memmap2::MmapRaw;
 use once_cell::sync::Lazy;
 
@@ -22,6 +27,11 @@ impl Deref for FileMmap {
 
     fn deref(&self) -> &Self::Target {
         &self.mmap
+    }
+}
+impl DerefMut for FileMmap {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.mmap
     }
 }
 
@@ -58,10 +68,13 @@ impl FileMmap {
     pub fn append(&mut self, bytes: &[u8]) -> io::Result<u64> {
         let addr = self.file.metadata()?.len();
         self.set_len(addr + bytes.len() as u64)?;
-        self.file.write_offset(bytes, addr)?;
+        self.write(addr as isize, bytes)?;
         Ok(addr)
     }
-    pub fn write(&mut self, addr: isize, bytes: &[u8]) -> io::Result<usize> {
-        self.file.write_offset(bytes, addr as u64)
+    pub fn write(&mut self, addr: isize, bytes: &[u8]) -> io::Result<()> {
+        let mut memory =
+            unsafe { std::slice::from_raw_parts_mut(self.as_mut_ptr().offset(addr), bytes.len()) };
+        memory.write_all(bytes)?;
+        self.flush_async_range(addr as usize, bytes.len())
     }
 }
