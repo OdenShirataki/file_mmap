@@ -17,6 +17,7 @@ pub struct FileMmap {
 }
 
 impl Drop for FileMmap {
+    #[inline(always)]
     fn drop(&mut self) {
         unsafe { ManuallyDrop::drop(&mut self.mmap) };
     }
@@ -45,12 +46,15 @@ impl FileMmap {
         let mmap = ManuallyDrop::new(Box::new(MmapRaw::map_raw(&file)?));
         Ok(FileMmap { file, mmap })
     }
+    #[inline(always)]
     pub fn len(&self) -> u64 {
         self.file.metadata().unwrap().len()
     }
+    #[inline(always)]
     pub unsafe fn bytes(&self, addr: isize, len: usize) -> &'static [u8] {
         std::slice::from_raw_parts(self.as_ptr().offset(addr), len)
     }
+    #[inline(always)]
     pub fn set_len(&mut self, len: u64) -> io::Result<()> {
         let current_len = self.file.metadata()?.len();
         if current_len > len
@@ -65,12 +69,14 @@ impl FileMmap {
             self.file.set_len(len)
         }
     }
+    #[inline(always)]
     pub fn append(&mut self, bytes: &[u8]) -> io::Result<u64> {
         let addr = self.file.metadata()?.len();
         self.set_len(addr + bytes.len() as u64)?;
         self.write(addr as isize, bytes)?;
         Ok(addr)
     }
+    #[inline(always)]
     pub fn write(&mut self, addr: isize, bytes: &[u8]) -> io::Result<()> {
         let mut memory =
             unsafe { std::slice::from_raw_parts_mut(self.as_mut_ptr().offset(addr), bytes.len()) };
