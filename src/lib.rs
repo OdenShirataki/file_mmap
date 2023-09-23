@@ -80,7 +80,6 @@ impl FileMmap {
     pub fn write(&mut self, addr: isize, bytes: &[u8]) -> io::Result<()> {
         let mut memory =
             unsafe { std::slice::from_raw_parts_mut(self.as_mut_ptr().offset(addr), bytes.len()) };
-        memory.write_all(bytes)?;
-        self.flush_async_range(addr as usize, bytes.len())
+        memory.write_all(bytes)
     }
 }
