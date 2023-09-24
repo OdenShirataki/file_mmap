@@ -2,7 +2,7 @@ use std::{
     fs,
     io::{self, Write},
     mem::ManuallyDrop,
-    ops::{Deref, DerefMut},
+    ops::Deref,
     path::Path,
 };
 
@@ -28,11 +28,6 @@ impl Deref for FileMmap {
 
     fn deref(&self) -> &Self::Target {
         &self.mmap
-    }
-}
-impl DerefMut for FileMmap {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.mmap
     }
 }
 
