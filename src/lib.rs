@@ -31,6 +31,7 @@ impl Deref for FileMmap {
 }
 
 impl FileMmap {
+    /// Opens the file and creates the mmap.
     pub fn new<P: AsRef<Path>>(path: P) -> io::Result<Self> {
         let file = fs::OpenOptions::new()
             .read(true)
@@ -41,14 +42,20 @@ impl FileMmap {
         Ok(FileMmap { file, mmap })
     }
 
+    /// Gets the length of the file.
     pub fn len(&self) -> u64 {
         self.file.metadata().unwrap().len()
     }
 
+    /// Gets a byte slice from the mmap'd region.
+    ///
+    /// # Safety
+    /// Make sure addr+len does not exceed the size of the file.
     pub unsafe fn bytes(&self, addr: isize, len: usize) -> &'static [u8] {
         std::slice::from_raw_parts(self.as_ptr().offset(addr), len)
     }
 
+    /// Sets the length of the file.
     pub fn set_len(&mut self, len: u64) -> io::Result<()> {
         let current_len = self.file.metadata()?.len();
         if current_len > len
@@ -64,6 +71,7 @@ impl FileMmap {
         }
     }
 
+    /// Appends a byte slice to the end of the file.
     pub fn append(&mut self, bytes: &[u8]) -> io::Result<u64> {
         let addr = self.file.metadata()?.len();
         self.set_len(addr + bytes.len() as u64)?;
@@ -71,6 +79,7 @@ impl FileMmap {
         Ok(addr)
     }
 
+    /// Writes a byte slice to the mmap'd region.
     pub fn write(&mut self, addr: isize, bytes: &[u8]) -> io::Result<()> {
         let mut memory =
             unsafe { std::slice::from_raw_parts_mut(self.as_mut_ptr().offset(addr), bytes.len()) };
