@@ -51,7 +51,7 @@ impl FileMmap {
     ///
     /// # Safety
     /// Make sure addr+len does not exceed the size of the file.
-    pub unsafe fn bytes(&self, addr: isize, len: usize) -> &'static [u8] {
+    pub unsafe fn bytes(&self, addr: isize, len: usize) -> &[u8] {
         std::slice::from_raw_parts(self.as_ptr().offset(addr), len)
     }
 
