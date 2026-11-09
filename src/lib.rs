@@ -4,12 +4,17 @@ use std::{
     mem::ManuallyDrop,
     ops::Deref,
     path::Path,
-    sync::LazyLock,
 };
 
 use memmap2::MmapRaw;
 
-static PAGE_SIZE: LazyLock<usize> = LazyLock::new(sysconf::page::pagesize);
+/// Lower bound of the OS page size, used to skip remapping when the file grows
+/// within the page that is already mapped.
+///
+/// This only has to be less than or equal to the real page size: a smaller value
+/// just causes extra remaps, never a missing one. 4 KiB is the smallest page size
+/// on mainstream platforms (x86 is 4 KiB, Apple Silicon 16 KiB, some ARM 64 KiB).
+const PAGE_SIZE: usize = 4096;
 
 pub struct FileMmap {
     file: fs::File,
@@ -68,7 +73,7 @@ impl FileMmap {
         let current_len = self.len;
         if current_len > len
             || current_len == 0
-            || ((current_len as usize - 1) / *PAGE_SIZE != len as usize / *PAGE_SIZE)
+            || ((current_len as usize - 1) / PAGE_SIZE != len as usize / PAGE_SIZE)
         {
             unsafe { ManuallyDrop::drop(&mut self.mmap) };
             self.file.set_len(len)?;
